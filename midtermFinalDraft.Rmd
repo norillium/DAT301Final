@@ -1,0 +1,295 @@
+---
+title: "DAT 301 Midterm Project"
+subtitle: Ruben Matell (1217697208), Xueqin Lu (1210306614), Lauren Coleman (1212426629)
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+rm(list)
+```
+
+## Our Topic
+
+Our group chose to explore data regarding reproductive health from the United Nations.
+
+We agreed upon some variables we wanted to consider, including population, Gross Domestic Product (GDP), AIDS rate, Contraceptive Prevalence Rate (CPR), crude birth rate, Maternal Mortality Rate (MMR), and annual health expenditure.
+
+Because each data set included different countries, we merged all of the data sets above into our own combined data set, which we titled `allHealthData`. This step greatly facilitated our analysis of the data.
+
+## The Problem
+
+Our goal with this project was to gain a deeper understanding regarding the intersections and interactions of the many variables we explored.
+
+We pondered many of the following questions, and more: What is the relationship between Contraceptive Prevalence Rate (CPR) and AIDS rates? Does CPR impact birth rate or Maternal Mortality Rate (MMR)? How might GDP and annual health expenditures be related to CPR?
+
+Most importantly, **what steps might we take to create a safer and healthier global community?**
+
+Make sure to keep these questions in mind while viewing the following figures. We encourage you to add more questions to the list as you think of them, and we will revisit these queries at the end of our presentation.
+
+## World Population Spread {.smaller}
+These graphs demonstrate that the vast majority of countries have population sizes under 200 million, with the median population size being closer to (and just under) 100 million. There are approximately ten countries whose populations would be considered outliers because their populations are greater than 700 million.
+
+```{r, echo=FALSE,message=FALSE, warning=FALSE}
+Popdata = read.csv('C:/Users/14847/Downloads/populationsize.csv')
+
+par(mfrow=c(2,1),mai=c(0.77,.6,0.77,0.6))
+hist(Popdata$PopValue,breaks=300,col="green",main="World Population Histogram",xlab='Population (thousands)',ylab="Frequency", axes=TRUE)
+boxplot(Popdata$PopValue,horizontal = TRUE,main="World Population Boxplot",ylim=c(0,140000),axes=F,col="green",xlab="Population (thousands)",axes=TRUE)
+axis(1)
+```
+
+## Worldwide AIDS Prevalence {.smaller}
+This map displays the prevalence of AIDS around the world. We see that rates of AIDS are relatively low in the Americas, Asia, and Australia and higher in some African countries. Data is missing for several European, African, and Asian countries.
+
+```{r,echo=FALSE,message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(viridisLite)
+
+#Read in allHealthData file (Change to be correct directory path)
+undatatest = read.csv("C:/Users/14847/Desktop/college/fall_20/DAT301/allHealthData.csv")
+#creating shell for map (do not change)
+world_map <- map_data('world')
+world_map <- subset(world_map, region!="Antarctica")
+invisible(ggplot(world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill="lightgray", colour = "white"))
+undatatest<- undatatest %>%
+  rename(region = Country.or.Area)
+undatatest.map <- left_join(undatatest, world_map, by = "region")
+
+invisible(gg <- ggplot(undatatest.map))
+invisible(gg <- gg + geom_map(dat=world_map, map = world_map, 
+                    aes(map_id=region), fill="white", color="black"))
+
+#filling map with our data (see fill = CPR). Change CPR to be whatever value you wish from allHealthData.
+gg <- gg + geom_map(map = world_map, aes(map_id = region, fill = percentWithAIDS), 
+                    colour = "black")
+gg <- gg + expand_limits(x = world_map$long, y = world_map$lat)
+
+#Changing color gradient and legend title. Feel free to change these values.
+gg <- gg + scale_fill_gradient(low="#f7fcb9", high="#238443", name="AIDS (% of Population)")
+#Removing ticks and back panel
+gg <- gg + theme(panel.grid=element_blank(), panel.border=element_blank())
+gg <- gg + theme(axis.ticks=element_blank(), axis.text=element_blank())
+#Removing axis labels, changing title. Feel free to change this title to be suitable.
+gg <- gg + labs(x="", y="", title="AIDS Prevalence by Country")
+gg
+
+``` 
+
+## AIDS Prevalence vs. Population Size {.smaller}
+This graph does not depict a correlation between AIDS prevalence and population size. As is evident on the left side of the plot, AIDS prevalence varies widely among countries with small populations, and no strong correlation appears as population size increases.
+
+```{r, echo=FALSE,message=FALSE, warning=FALSE}
+suppressMessages(library(ggplot2))
+suppressMessages(library(dplyr))
+suppressMessages(library(viridisLite))
+suppressMessages(library(plotly))
+#Read in file (Change to be correct directory path)
+AIDSdata = read.csv('C:/Users/14847/Downloads/peoplewithAIDS.csv')
+Popdata = read.csv('C:/Users/14847/Downloads/populationsize.csv')
+AIDSPop = merge(AIDSdata,Popdata,by='Country.or.Area',all.x=T)
+
+
+#AIDSdata <- na.omit(AIDSdata)
+g <- ggplot(AIDSPop,aes(x=PopValue,y=AIDSRate,main))+geom_point()
+# create interactive graph
+xas <- list(title = "Population (thousands)")
+yax <- list(title = "AIDS cases (thousands)")
+plot_ly(AIDSPop,title="Population size vs. Percent of Popultation with AIDS", x=AIDSPop$PopValue, y=AIDSPop$AIDSRate, type="scatter", mode="markers") %>% layout(title = "Population size vs. Percent of Popultation with AIDS",xaxis=xas,yaxis=yax)
+
+
+```
+
+## Worldwide Contraceptive Prevalence {.smaller}
+This map displays the prevalence of contraceptives around the world. We see that contraceptives are very prevalent in the Americas, Asia, and Australia and less prevalent in much of Africa. Data is missing for many European countries.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+library(ggplot2)
+suppressMessages(library(dplyr,quietly = TRUE))
+library(viridisLite)
+#Read in file (Change to be correct directory path)
+undatatest = read.csv('C:/Users/14847/Downloads/contraceptive prevalence rate.csv')
+#creating shell for map (do not change)
+world_map <- map_data('world')
+world_map <- subset(world_map, region!="Antarctica")
+invisible(ggplot(world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill="lightgray", colour = "white"))
+undatatest<- undatatest %>%
+  rename(region = Country.or.Area)
+undatatest.map <- left_join(undatatest, world_map, by = "region")
+
+invisible(gg <- ggplot(undatatest.map))
+invisible(gg <- gg + geom_map(dat=world_map, map = world_map, 
+                    aes(map_id=region), fill="white", color="black"))
+
+#filling map with our data (see fill = CPR). Change CPR to be whatever value you wish from allHealthData.
+invisible(gg <- gg + geom_map(map = world_map, aes(map_id = region, fill = CPRValue), 
+                    colour = "black"))
+invisible(gg <- gg + expand_limits(x = world_map$long, y = world_map$lat))
+
+#Changing color gradient and legend title. Feel free to change these values.
+gg <- gg + scale_fill_gradient(low="#f7fcb9", high="#185c2e", name="CPR (%)")
+#Removing ticks and back panel
+gg <- gg + theme(panel.grid=element_blank(), panel.border=element_blank())
+gg <- gg + theme(axis.ticks=element_blank(), axis.text=element_blank())
+#Removing axis labels, changing title. Feel free to change this title to be suitable.
+gg <- gg + labs(x="", y="", title="Contraceptive Prevalence Rate by Country")
+gg
+```
+
+## Contraceptive vs. AIDS Prevalence {.smaller}
+This graph is very interesting. On the left side, we see that countries with negligible AIDS rates tend to have high contraceptive rates. The relationship trends quickly downward; as AIDS rates rise, contraceptive rates decline sharply. At the AIDS rate of ~4%, the trend reverses, and the CPR rises steadily with AIDS rates. One possible explanation could be that the high contraceptive rates on the right side of the graph are in response to high AIDS rates in certain countries. If this is the case, it's possible that in a few years we might see AIDS rates drop in those countries which currently have high CPRs and high AIDS prevalence.
+
+```{r, echo=FALSE,message=FALSE, warning=FALSE} 
+ library (ggplot2)
+library(plotly)
+allHealthData= read.csv("C:/Users/14847/Desktop/college/fall_20/DAT301/allHealthData.csv")
+scatterplot <- ggplot(allHealthData,aes(x=percentWithAIDS,y=CPR,label=Country.or.Area))+
+  geom_point(alpha = 0.4,size = 3)+
+  stat_smooth(method = "gam")+
+  ggtitle("CPR vs. AIDS") +
+  xlab("Population with AIDS (%)") + ylab("CPR (%)")+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 15)) +
+  theme_grey(base_rect_size = 10)+
+  theme(title = element_text(face=8),axis.title = element_text( angle = 0, color="Salmon", size=10, face=8))
+
+fig2 <- ggplotly(scatterplot)
+fig2 <- fig2 %>% layout(autosize = F, width = 700, height = 250)
+fig2
+
+``` 
+
+## Contraceptive Prevalence vs. Birth Rate {.smaller}
+This graph depicts a clear negative correlation between CPR and birth rate. Logically this result is reasonable, considering the fact that a primary purpose of contraceptive measures is preventing or reducing the likelihood of births.
+
+```{r, echo=FALSE,message=FALSE, warning=FALSE}
+birth = read.csv("C:/Users/14847/Downloads/crude birth rate-2011.csv")
+CPR = read.csv("C:/Users/14847/Downloads/contraceptive prevalence rate.csv")
+
+newdata=merge(birth,CPR, by = "Country.or.Area", all.x = TRUE)
+#newdata<- newdata %>% rename("BirthValue"=Value.x,"CPRValue"=Value.y)
+newdata<-subset(newdata,!is.na(newdata$CPRValue))
+
+scatterplot <- ggplot(newdata,aes(x=BirthValue,y=CPRValue,label=Country.or.Area))+
+  geom_point(alpha = 0.4,size = 3)+
+  stat_smooth(method = "gam")+
+  ggtitle("Contraceptive Prevalence Rate (CPR) vs. Birth Rate") +
+  xlab("Crude Birth Rate (per 1,000 people)") + ylab("CPR (%)")+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 15)) +
+  theme_grey(base_rect_size = 10)+
+  theme(title = element_text(face=8),axis.title = element_text( angle = 0, color="Salmon", size=10, face=8))
+fig <- ggplotly(scatterplot)
+
+fig
+
+```
+
+
+## CPR and Maternal Mortality {.smaller}
+This graph demonstrates that, around the world, there is a high frequency of low CPRs as well as a high frequency of high MMRs. In other words, contraceptives are not typically very accessible, and mothers tend to die during childbirth fairly frequently. This might indicate a strong negative correlation between contraceptive prevalence and maternal mortality.
+
+```{r, echo=FALSE,message=FALSE, warning=FALSE}
+# library (ggplot2)
+library(plotly)
+allHealthData= read.csv("C:/Users/14847/Desktop/college/fall_20/DAT301/allHealthData.csv")
+fig <- plot_ly(alpha = 0.6)
+adjustedMMR= allHealthData$MMR/10
+
+fig <- fig %>% add_histogram(x = allHealthData$CPR, name = "Contraceptive Prevalance Rate (%)")
+fig <- fig %>% add_histogram(x = adjustedMMR, name = "Maternal Deaths per 10,000 Live Births")
+f <- list(
+  family = "Courier New, monospace",
+  size = 18,
+  color = "#7f7f7f"
+)
+
+x <- list(
+  title = "CPR; MMR",
+  titlefont = f
+)
+y <- list(
+  title = "Frequency",
+  titlefont = f
+)
+fig <- fig %>% layout(title = "Histograms of CPR and MMR", xaxis= x, yaxis=y,barmode = "overlay",width=700,height=300)
+
+fig
+```
+
+## Health Expenditure vs. CPR {.smaller}
+This graph depicts a slight positive correlation between countries' annual health expenditures and contraceptive prevalence. Intuitively, this makes sense: as a country invests in its citizens' sexual and reproductive health, it would seem likely that preventative measures such as contraceptives would become more widespread and accessible.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, r,echo=FALSE}
+library (ggplot2)
+library(plotly)
+allHealthData= read.csv("C:/Users/14847/Desktop/college/fall_20/DAT301/allHealthData.csv")
+scatterplot <- ggplot(allHealthData,aes(x=CPR,y=HealthExpenditure,label=Country.or.Area))+
+  geom_point(alpha = 0.4,size = 3)+
+  stat_smooth(method = "gam")+
+  ggtitle("Annual Health Expenditure vs. CPR") +
+  xlab("CPR (%)") + ylab("Annual Health Expenditure (% of budget)")+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 15)) +
+  theme_grey(base_rect_size = 10)+
+  theme(title = element_text(face=8),axis.title = element_text( angle = 0, color="Salmon", size=10, face=8))
+fig2 <- ggplotly(scatterplot)
+fig2 <- fig2 %>% layout(autosize = F, width = 700, height = 400)
+fig2
+```
+
+## GDP Growth {.smaller}
+In this graph, we see that the majority of countries' GDPs grew less than five percent since 1990, with a couple growing much more (~20%) and some actually declining slightly. As GDP increases, we might anticipate that a country would have more resources to dedicate toward reproductive education and healthcare.
+
+```{r, echo=FALSE,message=FALSE, warning=FALSE}
+library(plotly)
+
+
+
+allHealthData = read.csv("C:/Users/14847/Desktop/college/fall_20/DAT301/allHealthData.csv")
+gdp= allHealthData$percGrowth_GDP
+y= allHealthData$HealthExpenditure
+#hist <- rchisq ( 100,5,0 )
+f <- list(
+  family = "Courier New, monospace",
+  size = 18,
+  color = "#7f7f7f"
+)
+
+x <- list(
+  title = "GDP Growth (%)",
+  titlefont = f
+)
+y <- list(
+  title = "Frequency",
+  titlefont = f
+)
+fig <-plot_ly( x= gdp , type = "histogram")
+fig <- fig %>% layout(title="GDP Growth by Country 1990-2011",xaxis = x, yaxis = y)
+fig
+```
+
+
+## Recall
+
+Let's revisit the questions we posed at the beginning of our presentation. Feel free to add any others you may have come up with throughout the presentation:
+
+What is the relationship between Contraceptive Prevalence Rate (CPR) and AIDS rates? Does CPR impact birth rate or Maternal Mortality Rate (MMR)? How might GDP and annual health expenditures be related to CPR?
+Most importantly, **what steps might we take to create a safer and healthier global community?**
+
+So, what did we learn?
+
+## Our Findings
+
+As we analyzed the multitude of variables in `allHealthData`, we found numerous interesting correlations between population, Gross Domestic Product (GDP), AIDS rate, Contraceptive Prevalence Rate (CPR), crude birth rate, Maternal Mortality Rate (MMR), and annual health expenditure. For instance, we found that CPR trends downward then upward with AIDS rate. We also discovered a negative correlation between CPR and birth rate, as well as a possibly negative correlation between CPR and MMR. On the other hand, we found a positive correlation between health expenditures and CPR.
+
+## Moving Forward
+
+Given the patterns and relationships we found in the data, and considering the general worldwide increase in GDP, we have reason to believe that many countries would benefit from taking this opportunity to direct more resources toward reproductive health and contraceptive accessibility. As more people obtain more reliable access to various contraceptive measures, we could see a decline in global rates of AIDS, maternal mortality, and births overall.
+
+## Sources
+
+[United Nations Data Explorer](http://data.un.org/Explorer.aspx?d=SOWC&f=inID%3a90)
